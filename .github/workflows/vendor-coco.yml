@@ -1,0 +1,48 @@
+name: Vendor COCO demo images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vendor-coco.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor-coco-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download selected COCO 2014 images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/coco
+          base='http://images.cocodataset.org/train2014'
+          for id in 149442 282590 261977 488689; do
+            file=$(printf 'COCO_train2014_%012d.jpg' "$id")
+            echo "Downloading $file"
+            curl --fail --location --retry 4 --retry-delay 2 \
+              "$base/$file" \
+              --output "assets/coco/$file"
+            test -s "assets/coco/$file"
+          done
+          ls -lh assets/coco
+
+      - name: Commit images to repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/coco/*.jpg
+          if git diff --cached --quiet; then
+            echo 'COCO images are already present.'
+            exit 0
+          fi
+          git commit -m 'Vendor selected COCO demo images'
+          git push
