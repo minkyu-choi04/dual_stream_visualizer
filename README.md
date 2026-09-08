@@ -1,4 +1,4 @@
-# DualStreamRetinaWeb
+# Dual Stream Visualizer
 
 Interactive, browser-based visualization of the retinal front end from **DualStreamBrains**.
 
@@ -73,7 +73,7 @@ http://localhost:8000
 The expected URL is:
 
 ```text
-https://minkyu-choi04.github.io/DualStreamRetinaWeb/
+https://minkyu-choi04.github.io/dual_stream_visualizer/
 ```
 
 ## Files
