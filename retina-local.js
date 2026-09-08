@@ -8,10 +8,6 @@
   const wctx = work.getContext('2d', { willReadFrequently: true });
   const sampled = document.createElement('canvas'); sampled.width = 64; sampled.height = 64;
   const sampleCtx = sampled.getContext('2d');
-  const blurCanvas = document.createElement('canvas'); blurCanvas.width = 720; blurCanvas.height = 720;
-  const blurCtx = blurCanvas.getContext('2d');
-  const foveatedCanvas = document.createElement('canvas'); foveatedCanvas.width = 720; foveatedCanvas.height = 720;
-  const foveatedCtx = foveatedCanvas.getContext('2d');
 
   const presets = {
     coco149442: { src: './assets/coco/COCO_train2014_000000149442.jpg', scan: [[-.52,-.18],[-.18,.05],[.28,-.12],[.55,.22],[.12,.42],[-.42,.36]] },
@@ -44,6 +40,9 @@
     ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
   }
 
+  // Direct JavaScript port of the fixation-centered radial coordinate mapping
+  // used by make_xy2ret_grid_r in the original DualStreamBrains repository.
+  // No extra fixation-dependent blur, sharpening, or vignette is applied here.
   function mapRetinalToCartesian(u,v,fix,density,m=720,n=64){
     const rpMax = n/m;
     const a = Math.log(density)/rpMax;
@@ -67,40 +66,9 @@
     };
   }
 
-  function foveatedSource(fix){
-    blurCtx.clearRect(0,0,720,720);
-    blurCtx.filter='blur(7px)';
-    blurCtx.drawImage(work,0,0);
-    blurCtx.filter='none';
-
-    foveatedCtx.clearRect(0,0,720,720);
-    foveatedCtx.globalCompositeOperation='source-over';
-    foveatedCtx.globalAlpha=1;
-    foveatedCtx.drawImage(blurCanvas,0,0);
-
-    const px=(fix.x+1)*360, py=(fix.y+1)*360, radius=250;
-    foveatedCtx.save();
-    const g=foveatedCtx.createRadialGradient(px,py,25,px,py,radius);
-    g.addColorStop(0,'rgba(255,255,255,1)');
-    g.addColorStop(.58,'rgba(255,255,255,.9)');
-    g.addColorStop(1,'rgba(255,255,255,0)');
-    foveatedCtx.globalCompositeOperation='destination-out';
-    foveatedCtx.fillStyle=g;
-    foveatedCtx.fillRect(0,0,720,720);
-    foveatedCtx.restore();
-
-    foveatedCtx.save();
-    foveatedCtx.beginPath();
-    foveatedCtx.arc(px,py,radius,0,Math.PI*2);
-    foveatedCtx.clip();
-    foveatedCtx.drawImage(work,0,0);
-    foveatedCtx.restore();
-    return foveatedCanvas;
-  }
-
-  function renderRetina(ctx,density,source){
+  function renderRetina(ctx,density){
     if(!state.ready) return;
-    const src = source.getContext('2d').getImageData(0,0,720,720);
+    const src = wctx.getImageData(0,0,720,720);
     const dst = sampleCtx.createImageData(64,64);
     const sd=src.data, dd=dst.data;
     for(let j=0;j<64;j++) for(let i=0;i<64;i++) {
@@ -113,9 +81,6 @@
     ctx.imageSmoothingEnabled=true;
     ctx.clearRect(0,0,384,384);
     ctx.drawImage(sampled,0,0,384,384);
-    const vign=ctx.createRadialGradient(192,192,90,192,192,260);
-    vign.addColorStop(.55,'rgba(0,0,0,0)'); vign.addColorStop(1,'rgba(0,0,0,.35)');
-    ctx.fillStyle=vign; ctx.fillRect(0,0,384,384);
   }
 
   function drawGrid(density,color,stride){
@@ -150,9 +115,8 @@
   function renderAll(){
     if(!state.ready) return;
     renderScene();
-    const source=foveatedSource(state.fix);
-    renderRetina(mctx,state.mDensity,source);
-    renderRetina(pctx,state.pDensity,source);
+    renderRetina(mctx,state.mDensity);
+    renderRetina(pctx,state.pDensity);
     $('fixationText').textContent=`fixation ${state.fix.x.toFixed(2)}, ${state.fix.y.toFixed(2)}`;
     $('mDensityLabel').textContent=state.mDensity.toFixed(1)+'×';
     $('pDensityLabel').textContent=state.pDensity.toFixed(1)+'×';
