@@ -4,9 +4,13 @@
   const scene = $('sceneCanvas'), mCanvas = $('mCanvas'), pCanvas = $('pCanvas');
   const sctx = scene.getContext('2d'), mctx = mCanvas.getContext('2d'), pctx = pCanvas.getContext('2d');
 
+  const M_RESOLUTION = 64;
+  const P_RESOLUTION = 128;
+  const WARP_REFERENCE_GRID = 64;
+
   const work = document.createElement('canvas'); work.width = 720; work.height = 720;
   const wctx = work.getContext('2d', { willReadFrequently: true });
-  const sampled = document.createElement('canvas'); sampled.width = 64; sampled.height = 64;
+  const sampled = document.createElement('canvas');
   const sampleCtx = sampled.getContext('2d');
 
   const presets = {
@@ -43,7 +47,9 @@
   // Direct JavaScript port of the fixation-centered radial coordinate mapping
   // used by make_xy2ret_grid_r in the original DualStreamBrains repository.
   // No extra fixation-dependent blur, sharpening, or vignette is applied here.
-  function mapRetinalToCartesian(u,v,fix,density,m=720,n=64){
+  // The warp geometry remains referenced to the original 64-point retinal grid;
+  // P simply samples that same warped field at twice the linear output resolution.
+  function mapRetinalToCartesian(u,v,fix,density,m=720,n=WARP_REFERENCE_GRID){
     const rpMax = n/m;
     const a = Math.log(density)/rpMax;
     const b = Math.sqrt(Math.PI)*(1-Math.exp(a/2))/(1-Math.exp(a/2*rpMax));
@@ -57,8 +63,9 @@
     return {x:r*Math.cos(theta)+fix.x, y:r*Math.sin(theta)+fix.y};
   }
 
-  function retinalPoint(i,j,density){
-    const u=(i/63-.5)*2, v=(j/63-.5)*2;
+  function retinalPoint(i,j,density,resolution=M_RESOLUTION){
+    const denom = resolution - 1;
+    const u=(i/denom-.5)*2, v=(j/denom-.5)*2;
     const p=mapRetinalToCartesian(u,v,state.fix,density);
     return {
       x:Math.max(0,Math.min(719,(p.x+1)*.5*719)),
@@ -66,27 +73,28 @@
     };
   }
 
-  function renderRetina(ctx,density){
+  function renderRetina(ctx,density,resolution,src){
     if(!state.ready) return;
-    const src = wctx.getImageData(0,0,720,720);
-    const dst = sampleCtx.createImageData(64,64);
+    sampled.width = resolution;
+    sampled.height = resolution;
+    const dst = sampleCtx.createImageData(resolution,resolution);
     const sd=src.data, dd=dst.data;
-    for(let j=0;j<64;j++) for(let i=0;i<64;i++) {
-      const p=retinalPoint(i,j,density);
+    for(let j=0;j<resolution;j++) for(let i=0;i<resolution;i++) {
+      const p=retinalPoint(i,j,density,resolution);
       const x=Math.round(p.x), y=Math.round(p.y);
-      const si=(y*720+x)*4, di=(j*64+i)*4;
+      const si=(y*720+x)*4, di=(j*resolution+i)*4;
       dd[di]=sd[si]; dd[di+1]=sd[si+1]; dd[di+2]=sd[si+2]; dd[di+3]=255;
     }
     sampleCtx.putImageData(dst,0,0);
     ctx.imageSmoothingEnabled=true;
-    ctx.clearRect(0,0,384,384);
-    ctx.drawImage(sampled,0,0,384,384);
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.drawImage(sampled,0,0,ctx.canvas.width,ctx.canvas.height);
   }
 
   function drawGrid(density,color,stride){
     sctx.save(); sctx.fillStyle=color; sctx.globalAlpha=.74;
-    for(let j=0;j<64;j+=stride) for(let i=0;i<64;i+=stride){
-      const p=retinalPoint(i,j,density);
+    for(let j=0;j<M_RESOLUTION;j+=stride) for(let i=0;i<M_RESOLUTION;i+=stride){
+      const p=retinalPoint(i,j,density,M_RESOLUTION);
       if(p.x>=0&&p.x<=720&&p.y>=0&&p.y<=720){ sctx.beginPath(); sctx.arc(p.x,p.y,1.45,0,Math.PI*2); sctx.fill(); }
     }
     sctx.restore();
@@ -115,11 +123,12 @@
   function renderAll(){
     if(!state.ready) return;
     renderScene();
-    renderRetina(mctx,state.mDensity);
-    renderRetina(pctx,state.pDensity);
+    const src = wctx.getImageData(0,0,720,720);
+    renderRetina(mctx,state.mDensity,M_RESOLUTION,src);
+    renderRetina(pctx,state.pDensity,P_RESOLUTION,src);
     $('fixationText').textContent=`fixation ${state.fix.x.toFixed(2)}, ${state.fix.y.toFixed(2)}`;
-    $('mDensityLabel').textContent=state.mDensity.toFixed(1)+'×';
-    $('pDensityLabel').textContent=state.pDensity.toFixed(1)+'×';
+    $('mDensityLabel').textContent=`${state.mDensity.toFixed(1)}× · ${M_RESOLUTION}×${M_RESOLUTION}`;
+    $('pDensityLabel').textContent=`${state.pDensity.toFixed(1)}× · ${P_RESOLUTION}×${P_RESOLUTION}`;
     updateEyes();
   }
 
