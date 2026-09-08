@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive retinal sampling demo for DualStreamBrains." />
+  <title>Active Retina · DualStreamBrains</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <header class="topbar shell">
+    <a class="brand" href="https://github.com/minkyu-choi04/DualStreamBrains" target="_blank" rel="noreferrer"><span class="brand-mark"></span><span>DualStreamBrains</span></a>
+    <nav><a href="#demo">Demo</a><a href="#how">How it works</a><a href="https://openreview.net/forum?id=Fy1S3v4UAk" target="_blank" rel="noreferrer">Paper ↗</a></nav>
+  </header>
+  <main>
+    <section class="hero shell">
+      <div class="eyebrow">NeurIPS 2023 · Interactive retina</div>
+      <h1>Vision begins by choosing <em>where</em> to look.</h1>
+      <p class="hero-copy">Move the virtual eyes across a scene and watch two retina-inspired pathways sample the same image differently. The M-like / Where stream preserves a broader spatial view, while the P-like / What stream concentrates sampling near fixation.</p>
+      <div class="eyes-wrap" aria-label="Animated eyes following the current fixation">
+        <svg class="eyes" viewBox="0 0 360 112" role="img" aria-label="Two eyes following fixation">
+          <defs><radialGradient id="irisGlow" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#d7fbff"/><stop offset="55%" stop-color="#5fd4e6"/><stop offset="100%" stop-color="#1b6678"/></radialGradient></defs>
+          <path class="eye-white" d="M20 55 C48 12 132 12 160 55 C132 98 48 98 20 55Z"/><path class="eye-white" d="M200 55 C228 12 312 12 340 55 C312 98 228 98 200 55Z"/>
+          <g class="pupil pupil-left"><circle class="iris" cx="90" cy="55" r="24"/><circle class="pupil-core" cx="90" cy="55" r="10"/><circle class="eye-glint" cx="82" cy="46" r="4"/></g>
+          <g class="pupil pupil-right"><circle class="iris" cx="270" cy="55" r="24"/><circle class="pupil-core" cx="270" cy="55" r="10"/><circle class="eye-glint" cx="262" cy="46" r="4"/></g>
+        </svg>
+        <div class="gaze-label"><span></span> current gaze</div>
+      </div>
+    </section>
+    <section id="demo" class="demo shell">
+      <div class="demo-toolbar card">
+        <div class="toolbar-group primary-actions">
+          <button id="autoButton" class="button button-primary" type="button" aria-pressed="true"><span class="button-icon">Ⅱ</span><span class="button-label">Pause eye movement</span></button>
+          <label class="switch-control"><input id="followCursor" type="checkbox"/><span class="switch"></span><span>Follow cursor</span></label>
+        </div>
+        <div class="toolbar-group"><label class="field-label" for="presetImage">Scene</label><select id="presetImage" class="select-control"><option value="frame0">Movie frame 1</option><option value="frame1">Movie frame 2</option><option value="frame2">Movie frame 3</option></select><label class="button button-secondary upload-button" for="imageUpload">Upload your image</label><input id="imageUpload" class="visually-hidden" type="file" accept="image/*"/></div>
+        <div class="toolbar-group"><label class="switch-control"><input id="showGrid" type="checkbox" checked/><span class="switch"></span><span>Sampling grid</span></label><label class="field-label" for="gridMode">Overlay</label><select id="gridMode" class="select-control compact"><option value="both">Both</option><option value="m">M-like</option><option value="p">P-like</option></select></div>
+      </div>
+      <div class="demo-layout">
+        <article class="scene-card card"><div class="card-head"><div><span class="kicker">01 · Look</span><h2>Original scene</h2></div><div class="status-pill"><span class="status-dot"></span><span id="fixationText">fixation 0.00, 0.00</span></div></div><div class="scene-stage" id="sceneStage"><canvas id="sceneCanvas" width="720" height="720" aria-label="Original scene with retinal sampling points"></canvas><div class="scene-hint">Click anywhere to move the eyes</div></div><div class="legend-row"><div class="legend-item"><span class="legend-dot m-dot"></span>M-like / Where samples</div><div class="legend-item"><span class="legend-dot p-dot"></span>P-like / What samples</div></div></article>
+        <div class="retina-column">
+          <article class="retina-card card m-card"><div class="card-head"><div><span class="kicker">02A · Sample</span><h2>M-like <span>/ Where</span></h2></div><span class="stream-badge m-badge">broader</span></div><div class="retina-frame"><canvas id="mCanvas" width="384" height="384" aria-label="M-like retinal sampling output"></canvas></div><p>Lower foveal concentration keeps relatively more spatial context available to the Where pathway.</p><div class="metric-row"><span>density ratio</span><strong id="mDensityLabel">2.5×</strong></div></article>
+          <article class="retina-card card p-card"><div class="card-head"><div><span class="kicker">02B · Sample</span><h2>P-like <span>/ What</span></h2></div><span class="stream-badge p-badge">foveal</span></div><div class="retina-frame"><canvas id="pCanvas" width="384" height="384" aria-label="P-like retinal sampling output"></canvas></div><p>Higher sampling concentration near fixation emphasizes fine information for the What pathway.</p><div class="metric-row"><span>density ratio</span><strong id="pDensityLabel">15×</strong></div></article>
+        </div>
+      </div>
+      <details class="controls-card card"><summary><span><strong>Explore the transform</strong><small>Adjust the retinal density ratios in real time</small></span><span class="summary-icon">+</span></summary><div class="slider-grid"><label class="slider-control"><span><b>M-like density</b><output id="mDensityOutput">2.5</output></span><input id="mDensity" type="range" min="1.1" max="10" value="2.5" step="0.1"/></label><label class="slider-control"><span><b>P-like density</b><output id="pDensityOutput">15.0</output></span><input id="pDensity" type="range" min="1.1" max="25" value="15" step="0.1"/></label><button id="resetDensity" class="button button-secondary" type="button">Reset paper defaults</button></div></details>
+      <p class="privacy-note">Uploaded images stay in your browser. Nothing is sent to a server.</p>
+    </section>
+    <section id="how" class="how shell">
+      <div class="section-heading"><span class="eyebrow">From retina to two visual streams</span><h2>One gaze, two views of the world.</h2><p>The browser demo ports the repository’s fixation-centered retinal coordinate transform to JavaScript. The CNNs themselves are not run in the browser.</p></div>
+      <div class="steps"><article class="step-card"><span class="step-number">01</span><h3>Move</h3><p>A fixation defines the center of the retinal coordinate system. Automatic fixations here are an illustrative scanpath; clicking lets you control gaze directly.</p></article><article class="step-card"><span class="step-number">02</span><h3>Sample</h3><p>A nonlinear radial transform moves sampling locations toward fixation. The two pathways use different density ratios but the same 64 × 64 output grid.</p></article><article class="step-card"><span class="step-number">03</span><h3>Separate</h3><p>The broader M-like input feeds the WhereCNN for visual attention, while the more foveally concentrated P-like input feeds the WhatCNN for recognition.</p></article></div>
+      <div class="flow card"><div class="flow-node input-node"><span>scene + fixation</span><strong>Active retina</strong></div><div class="flow-arrow">→</div><div class="flow-targets"><div class="flow-node"><span>M-like input</span><strong>WhereCNN</strong><small>visual attention</small></div><div class="flow-node"><span>P-like input</span><strong>WhatCNN</strong><small>object recognition</small></div></div></div>
+      <div class="accuracy-note"><strong>What is exact here?</strong><p>The coordinate warp follows <code>make_xy2ret_grid_r</code> from <code>neural_population.py</code> and starts from the repository defaults: density ratio 2.5 for the dorsal/Where input and 15 for the ventral/What input. The full PyTorch pipeline additionally applies fixation-dependent image foveation before this warp.</p></div>
+    </section>
+  </main>
+  <footer class="footer shell"><div><strong>DualStreamBrains</strong><span>A Dual-Stream Neural Network Explains the Functional Segregation of Dorsal and Ventral Visual Pathways in Human Brains</span></div><div class="footer-links"><a href="https://github.com/minkyu-choi04/DualStreamBrains" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://openreview.net/forum?id=Fy1S3v4UAk" target="_blank" rel="noreferrer">Paper ↗</a></div></footer>
+  <script src="./retina.js"></script>
+</body>
+</html>
