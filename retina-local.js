@@ -5,7 +5,7 @@
   const sctx = scene.getContext('2d'), mctx = mCanvas.getContext('2d'), pctx = pCanvas.getContext('2d');
 
   const M_RESOLUTION = 64;
-  const P_RESOLUTION = 128;
+  const P_RESOLUTION = 256;
   const WARP_REFERENCE_GRID = 64;
 
   const work = document.createElement('canvas'); work.width = 720; work.height = 720;
@@ -48,7 +48,7 @@
   // used by make_xy2ret_grid_r in the original DualStreamBrains repository.
   // No extra fixation-dependent blur, sharpening, or vignette is applied here.
   // The warp geometry remains referenced to the original 64-point retinal grid;
-  // P simply samples that same warped field at twice the linear output resolution.
+  // P simply samples that same warped field at four times the linear output resolution.
   function mapRetinalToCartesian(u,v,fix,density,m=720,n=WARP_REFERENCE_GRID){
     const rpMax = n/m;
     const a = Math.log(density)/rpMax;
