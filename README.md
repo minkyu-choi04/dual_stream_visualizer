@@ -2,7 +2,7 @@
 
 Interactive, browser-based visualization of the retinal front end from **DualStreamBrains**.
 
-**Live demo:** after GitHub Pages is enabled, this repository can be served directly from the `main` branch.
+**Live demo:** https://minkyu-choi04.github.io/dual_stream_visualizer/
 
 ## Connection to DualStreamBrains
 
@@ -38,6 +38,17 @@ The default parameters follow the research repository:
 - **What / ventral density ratio:** `15.0`
 - **Retinal output grid:** `64 × 64`
 
+## Default demo scenes
+
+The built-in scenes now use four user-selected images from the **MS COCO 2014 training set**, chosen because they contain multiple spatially separated objects and make fixation-dependent sampling easier to see:
+
+- COCO image `149442`: http://cocodataset.org/#explore?id=149442
+- COCO image `282590`: http://cocodataset.org/#explore?id=282590
+- COCO image `261977`: http://cocodataset.org/#explore?id=261977
+- COCO image `488689`: http://cocodataset.org/#explore?id=488689
+
+The webpage loads the image files from the official COCO image host rather than duplicating the images in this repository.
+
 ## Important implementation distinction
 
 This is an explanatory visualization, not the full trained model running in the browser.
@@ -46,8 +57,6 @@ This is an explanatory visualization, not the full trained model running in the 
 - The automatic gaze sequence is an **illustrative scanpath**; it does not execute the trained WhereCNN.
 - The full PyTorch preprocessing in `DualStreamBrains` applies staged fixation-dependent Gaussian foveation before warping. The webpage uses a lightweight browser-friendly approximation for the visual effect.
 - No pretrained model weights, PyTorch runtime, backend server, or GPU are required.
-
-The included example images are loaded from the original `DualStreamBrains` repository so that this visualization remains connected to the research project without duplicating those assets.
 
 ## Run locally
 
@@ -70,7 +79,7 @@ http://localhost:8000
 3. Select the `main` branch and `/ (root)`.
 4. Save.
 
-The expected URL is:
+The site is available at:
 
 ```text
 https://minkyu-choi04.github.io/dual_stream_visualizer/
